@@ -12,9 +12,9 @@ Contact form 7 Agile CRM integration.
 
 == Description ==
 
-This plugin adds integration for Agile CRM to contact form 7. With this plugin it is possible to submit a contact for to an external Agile CRM.
+This plugin adds integration for Agile CRM to Contact Form 7. With this plugin, it is possible to submit a contact to an Agile CRM instance.
 
-Per contact form you could enable Agile CRM integration. The submission of the contact form is then submitted to the Agile CRM REST api. That is why you should also enter an Agile CRM entity and an Agile CRM action. The data in the form should then match the data for the API. E.g. if you push a first_name to the api your field should be called first_name.
+Per contact form you could enable Agile CRM integration. The submission of the contact form is then submitted to the Agile CRM REST API. That is why you should also enter an Agile CRM entity and an Agile CRM action. The data in the form should then match the data for the api. E.g. if you push a first_name to the api your field should be called first_name.
 
 == Installation ==
 
@@ -33,5 +33,3 @@ Per contact form you could enable Agile CRM integration. The submission of the c
 
 = 1.0 =
 * Initial commit
-
-

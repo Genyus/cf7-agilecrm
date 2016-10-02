@@ -1,5 +1,36 @@
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Logs
+logs
 *.log
-wp-config.php
+
+wp-config.development.php
+wp-config.production.php
+wp-config.staging.php
 wp-content/advanced-cache.php
 wp-content/backup-db/
 wp-content/backups/
@@ -9,6 +40,8 @@ wp-content/upgrade/
 wp-content/uploads/
 wp-content/wp-cache-config.php
 wp-content/plugins/hello.php
+wp-content/plugins/contact-form-7-agilecrm-integration/
+wp-content/wflogs
 
 /.htaccess
 /license.txt
@@ -16,3 +49,6 @@ wp-content/plugins/hello.php
 /sitemap.xml
 /sitemap.xml.gz
 
+# Backups
+*.bak
+*.old
