@@ -33,20 +33,24 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
         protected $name = 'Contact Form 7 Agile CRM Add-On';
         protected $version = '1.0';
 
-	private static $instance;
-	private $settings;
+		private static $instance;
+		private $settings;
 
-	public static function get_instance() {
-		if ( empty( self::$instance ) ) {
-			self::$instance = new self;
+		public static function get_instance() {
+			if ( empty( self::$instance ) ) {
+				self::$instance = new self;
+			}
+
+			return self::$instance;
 		}
-
-		return self::$instance;
-	}
 	
         function __construct()
         {
-    error_log('__construct entered');
+			if(!class_exists('WPCF7')) {
+				require_once plugin_dir_path( __FILE__ ) . '/../contact-form-7/wp-contact-form-7.php';
+			}
+			$this->settings = WPCF7::get_option( 'agilecrm' );
+
             //register actions or hooks
             add_action('init', array(&$this, 'start_session'));
             add_action('wp_footer', array(&$this, 'set_email'), 98765);
@@ -62,101 +66,101 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
             
         }
 
-	private function menu_page_url( $args = '' ) {
-		$args = wp_parse_args( $args, array() );
+		private function menu_page_url( $args = '' ) {
+			$args = wp_parse_args( $args, array() );
 
-		$url = menu_page_url( 'wpcf7-integration', false );
-		$url = add_query_arg( array( 'service' => 'agilecrm' ), $url );
+			$url = menu_page_url( 'wpcf7-integration', false );
+			$url = add_query_arg( array( 'service' => 'agilecrm' ), $url );
 
-		if ( ! empty( $args) ) {
-			$url = add_query_arg( $args, $url );
+			if ( ! empty( $args) ) {
+				$url = add_query_arg( $args, $url );
+			}
+
+			return $url;
 		}
 
-		return $url;
-	}
+		public function get_title() {
+			return __( 'Agile CRM', 'contact-form-7' );
+		}
 
-	public function get_title() {
-		return __( 'Agile CRM', 'contact-form-7' );
-	}
+		public function is_active() {
+			$apikey = $this->get_apikey();
+			$domain = $this->get_domain();
+			$email = $this->get_email();
+			return $apikey && $domain && $email;
+		}
 
-	public function is_active() {
-		$apikey = $this->get_apikey();
-		$domain = $this->get_domain();
-		$email = $this->get_email();
-		return $apikey && $domain && $email;
-	}
+		public function get_categories() {
+			return array( 'crm' );
+		}
 
-	public function get_categories() {
-		return array( 'crm' );
-	}
+		public function icon() {
+			echo sprintf('<img src="%1s" style="display:block;clear:both;width:150px;" />', plugin_dir_url(__FILE__) . 'js/agile500.png');
+		}
 
-	public function icon() {
-		echo sprintf('<img src="%1s" style="display:block;clear:both;width:150px;" />', plugin_dir_url(__FILE__) . 'js/agile500.png');
-	}
+		public function link() {
+			echo sprintf( '<a href="%1$s">%2$s</a>',
+				'https://www.agilecrm.com',
+				'agilecrm.com' );
+		}
 
-	public function link() {
-		echo sprintf( '<a href="%1$s">%2$s</a>',
-			'https://agilecrm.com',
-			'agilecrm.com' );
-	}
+		public function load( $action = '' ) {
+			if ( 'update' == $action ) {
+				if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
+					check_admin_referer( 'update', 'wpcf7-agilecrm-setup' );
 
-	public function load( $action = '' ) {
-		if ( 'setup' == $action ) {
-			if ( 'POST' == $_SERVER['REQUEST_METHOD'] ) {
-				check_admin_referer( 'wpcf7-agilecrm-setup' );
+					$apikey = isset( $_POST['apikey'] ) ? trim( $_POST['apikey'] ) : '';
+					$domain = isset( $_POST['domain'] ) ? trim( $_POST['domain'] ) : '';
+					$email = isset( $_POST['email'] ) ? trim( $_POST['email'] ) : '';
 
-				$apikey = isset( $_POST['apikey'] ) ? trim( $_POST['apikey'] ) : '';
-				$domain = isset( $_POST['domain'] ) ? trim( $_POST['domain'] ) : '';
-				$email = isset( $_POST['email'] ) ? trim( $_POST['email'] ) : '';
+					if ( $apikey && $domain && $email ) {
+						WPCF7::update_option( 'agilecrm', array( 'domain' => $domain, 'apikey' => $apikey, 'email' => $email ) );
+						$redirect_to = $this->menu_page_url( array(
+							'message' => 'success' ) );
+					} elseif ( '' === $apikey && '' === $domain && '' === $email) {
+						WPCF7::update_option( 'agilecrm', null );
+						$redirect_to = $this->menu_page_url( array(
+							'message' => 'success' ) );
+					} else {
+						$redirect_to = $this->menu_page_url( array(
+							'action' => 'setup',
+							'message' => 'invalid' ) );
+					}
 
-				if ( $apikey && $domain && $email ) {
-					WPCF7::update_option( 'agilecrm', array( 'domain' => $domain, 'apikey' => $apikey, 'email' => $email ) );
-					$redirect_to = $this->menu_page_url( array(
-						'message' => 'success' ) );
-				} elseif ( '' === $apikey && '' === $domain && '' === $email) {
-					WPCF7::update_option( 'agilecrm', null );
-					$redirect_to = $this->menu_page_url( array(
-						'message' => 'success' ) );
-				} else {
-					$redirect_to = $this->menu_page_url( array(
-						'action' => 'setup',
-						'message' => 'invalid' ) );
+					wp_safe_redirect( $redirect_to );
+					exit();
 				}
-
-				wp_safe_redirect( $redirect_to );
-				exit();
 			}
 		}
-	}
 
-	public function admin_notice( $message = '' ) {
-		if ( 'invalid' == $message ) {
-			echo sprintf(
-				'<div class="error notice notice-error is-dismissible"><p><strong>%1$s</strong>: %2$s</p></div>',
-				esc_html( __( "ERROR", 'contact-form-7' ) ),
-				esc_html( __( "Invalid key values.", 'contact-form-7' ) ) );
+		public function admin_notice( $message = '' ) {
+			if ( 'invalid' == $message ) {
+				echo sprintf(
+					'<div class="error notice notice-error is-dismissible"><p><strong>%1$s</strong>: %2$s</p></div>',
+					esc_html( __( "ERROR", 'contact-form-7' ) ),
+					esc_html( __( "Invalid key values.", 'contact-form-7' ) ) );
+			}
+
+			if ( 'success' == $message ) {
+				echo sprintf( '<div class="updated notice notice-success is-dismissible"><p>%s</p></div>',
+					esc_html( __( 'Settings saved.', 'contact-form-7' ) ) );
+			}
 		}
 
-		if ( 'success' == $message ) {
-			echo sprintf( '<div class="updated notice notice-success is-dismissible"><p>%s</p></div>',
-				esc_html( __( 'Settings saved.', 'contact-form-7' ) ) );
-		}
-	}
-
-	public function display( $action = '' ) {
+		public function display( $action = '' ) {
 ?>
 <p><?php echo esc_html( __( "Agile CRM is an affordable, all-in-one CRM.", 'contact-form-7' ) ); ?></p>
 
 <?php
-		if ( 'setup' == $action ) {
-			$this->display_setup();
-			return;
-		}
+			if ( 'setup' == $action ) {
+				$this->display_setup();
+				return;
+			}
 
-		if ( $this->is_active() ) {
-			$apikey = $this->get_apikey();
-			$domain = $this->get_domain();
-			$email = $this->get_email();
+			if ( $this->is_active() ) {
+				$apikey = $this->get_apikey();
+				$domain = $this->get_domain();
+				$email = $this->get_email();
 ?>
 <table class="form-table">
 <tbody>
@@ -178,7 +182,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
 <p><a href="<?php echo esc_url( $this->menu_page_url( 'action=setup' ) ); ?>" class="button"><?php echo esc_html( __( "Reset Keys", 'contact-form-7' ) ); ?></a></p>
 
 <?php
-		} else {
+			} else {
 ?>
 <div style="width: auto; height: auto; color: #8a6d3b; background-color: #fcf8e3; border: 1px solid #faebcc; border-radius: 5px; padding:0 15px;">
 	<h4><?php echo esc_html( __( "Need an Agile CRM account?", 'contact-form-7' ) ); ?></h4>
@@ -189,13 +193,13 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
 
 <p><?php echo sprintf( esc_html( __( "For more details, see %s.", 'contact-form-7' ) ), wpcf7_link( __( 'https://github.com/agilecrm/rest-api#api-key', 'contact-form-7' ), __( 'the documentation', 'contact-form-7' ) ) ); ?></p>
 <?php
+			}
 		}
-	}
 
-	public function display_setup() {
+		public function display_setup() {
 ?>
 <form method="post" action="<?php echo esc_url( $this->menu_page_url( 'action=setup' ) ); ?>">
-	<?php wp_nonce_field( 'wpcf7-agilecrm-setup' ); ?>
+	<?php wp_nonce_field( 'update', 'wpcf7-agilecrm-setup' ); ?>
 	<?php settings_fields($this->tag . '-settings-group'); ?>
 	<?php do_settings_sections($this->tag); ?>
 	<table class="form-table">
@@ -224,49 +228,49 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
 	<p class="submit"><input type="submit" class="button button-primary" value="<?php echo esc_attr( __( 'Save', 'contact-form-7' ) ); ?>" name="submit" /></p>
 </form>
 <?php
-	}
-
-public function wpcf7_agilecrm_register_service() {
-    error_log('wpcf7_agilecrm_register_service entered');
-	$integration = WPCF7_Integration::get_instance();
-
-	$categories = array(
-		'crm' => __( 'CRM', 'contact-form-7' ) );
-
-	foreach ( $categories as $name => $category ) {
-		$integration->add_category( $name, $category );
-	}
-
-	$services = array(
-		'agilecrm' => AgileCF7Addon::get_instance() );
-
-	foreach ( $services as $name => $service ) {
-		$integration->add_service( $name, $service );
-	}
-    error_log('wpcf7_agilecrm_register_service ended');
-}
-
-	private function get_setting($setting) {
-		$settings = (array) $this->settings;
-
-		if ( isset( $settings[$setting] ) ) {
-			return $settings[$setting];
-		} else {
-			return false;
 		}
-	}
+
+		public function wpcf7_agilecrm_register_service() {
+			error_log('wpcf7_agilecrm_register_service entered');
+			$integration = WPCF7_Integration::get_instance();
+
+			$categories = array(
+				'crm' => __( 'CRM', 'contact-form-7' ) );
+
+			foreach ( $categories as $name => $category ) {
+				$integration->add_category( $name, $category );
+			}
+
+			$services = array(
+				'agilecrm' => AgileCF7Addon::get_instance() );
+
+			foreach ( $services as $name => $service ) {
+				$integration->add_service( $name, $service );
+			}
+			error_log('wpcf7_agilecrm_register_service ended');
+		}
+
+		private function get_setting($setting) {
+			$settings = (array) $this->settings;
+
+			if ( isset( $settings[$setting] ) ) {
+				return $settings[$setting];
+			} else {
+				return false;
+			}
+		}
 	
-	public function get_apikey() {
-		return $this->get_setting('apikey');
-	}
+		public function get_apikey() {
+			return $this->get_setting('apikey');
+		}
 
-	public function get_domain() {
-		return $this->get_setting('domain');
-	}
+		public function get_domain() {
+			return $this->get_setting('domain');
+		}
 
-	public function get_email() {
-		return $this->get_setting('email');
-	}
+		public function get_email() {
+			return $this->get_setting('email');
+		}
 
         /**
          * Start PHP session if not started earlier
