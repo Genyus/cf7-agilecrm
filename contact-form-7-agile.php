@@ -14,6 +14,8 @@ Author URI: https://ingenyus.com
 License: AGPLv3
 Text Domain: ccontact-form-7-agilecrm-integration
 */
+define( 'CF7_AGILE__PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'CF7_AGILE__PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 defined('ABSPATH') or die('Plugin file cannot be accessed directly.');
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 //get the base class
@@ -43,7 +45,40 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
 
 			return self::$instance;
 		}
-	
+
+	  public static function view( $name, array $args = array() ) {
+		$args = apply_filters( 'cf7_agile_view_arguments', $args, $name );
+
+		foreach ( $args AS $key => $val ) {
+		  $$key = $val;
+		}
+
+		load_plugin_textdomain( 'contact-form-7-agilecrm-integration' );
+
+		$file = CF7_AGILE__PLUGIN_DIR . 'views/'. $name . '.php';
+
+		include( $file );
+	  }
+
+	  /**
+	   * Add a Agile setting panel to the contact form admin section.
+	   *
+	   * @param array $panels
+	   * @return array
+	   */
+	  public function panels($panels) {
+		$panels['contact-form-7-agilecrm-integration'] = array(
+		  'title' => __( 'Agile CRM', 'contact-form-7-agilecrm-integration' ),
+		  'callback' => array($this, 'agilecrm_panel'),
+		) ;
+		return $panels;
+	  }
+
+	  public function agilecrm_panel($post) {
+		$agilecrm = $post->prop('agilecrm' );
+		AgileCF7Addon::view('agilecrm_panel', array('post' => $post, 'agilecrm' => $agilecrm));
+	  }
+
         function __construct()
         {
 			if(!class_exists('WPCF7')) {
@@ -60,10 +95,14 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
 
             add_action('wpcf7_init', array(&$this, 'wpcf7_agilecrm_register_service'));
             add_action('wpcf7_before_send_mail', array(&$this, 'sync_entries_to_agile'), 10, 2);
+            add_action('wpcf7_save_contact_form', array(&$this, 'save_contact_form'));
+
+			add_filter('wpcf7_editor_panels', array(&$this, 'panels'));
+            add_filter('wpcf7_contact_form_properties', 'contact_form_properties');
 
             add_action('wp_ajax_agilecrm_cf7_load_fields', array(&$this, 'load_form_fields'));
             add_action('wp_ajax_agilecrm_cf7_map_fields', array(&$this, 'map_form_fields'));
-            
+
         }
 
 		private function menu_page_url( $args = '' ) {
@@ -231,7 +270,6 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
 		}
 
 		public function wpcf7_agilecrm_register_service() {
-			error_log('wpcf7_agilecrm_register_service entered');
 			$integration = WPCF7_Integration::get_instance();
 
 			$categories = array(
@@ -247,7 +285,6 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
 			foreach ( $services as $name => $service ) {
 				$integration->add_service( $name, $service );
 			}
-			error_log('wpcf7_agilecrm_register_service ended');
 		}
 
 		private function get_setting($setting) {
@@ -259,7 +296,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
 				return false;
 			}
 		}
-	
+
 		public function get_apikey() {
 			return $this->get_setting('apikey');
 		}
@@ -348,13 +385,36 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
             include(sprintf("%s/templates/" . $current_tab . "-tab.php", dirname(__FILE__)));
         }
 
+        function contact_form_properties($properties) {
+          if (!isset($properties['agilecrm'])) {
+            $properties['agilecrm'] = array(
+              'enable' => false,
+              'parameters' => 'source=CF7'
+            );
+          }
+          return $properties;
+        }
+
+        public function save_contact_form($contact_form) {
+          $properties = $contact_form->get_properties();
+          $agilecrm = $properties['agilecrm'];
+
+          $agilecrm['enable'] = true;
+
+          if ( isset( $_POST['agilecrm-parameters'] ) ) {
+            $agilecrm['parameters'] = trim( $_POST['agilecrm-parameters'] );
+          }
+
+          $properties['agilecrm'] = $agilecrm;
+          $contact_form->set_properties($properties);
+        }
+
         /**
          * Load form fields related to form id through Ajax
          */
         public function load_form_fields()
         {
             global $wpdb;
-            $formId = $_POST['formid'];
 
             $agileFields = array(
                 'first_name' => array('name' => 'First name', 'is_required' => true, 'type' => 'SYSTEM', 'is_address' => false),
@@ -370,7 +430,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
                 'address_state' => array('name' => 'State', 'is_required' => false, 'type' => 'SYSTEM', 'is_address' => true),
                 'address_zip' => array('name' => 'Zip', 'is_required' => false, 'type' => 'SYSTEM', 'is_address' => true),
                 'address_country' => array('name' => 'Country', 'is_required' => false, 'type' => 'SYSTEM', 'is_address' => true),
-                'notes' => array('name' => 'Note', 'is_required' => false, 'type' => 'SYSTEM', 'is_address' => false)
+                'notes' => array('name' => 'Notes', 'is_required' => false, 'type' => 'SYSTEM', 'is_address' => false)
             );
 
             $customFields = $this->agile_http("custom-fields/scope?scope=CONTACT", null, "GET");
@@ -399,7 +459,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
                     $required = 'class="required" required';
                 }
                 $mapFieldsMarkup .= '</th>';
-                $mapFieldsMarkup .= '<td><input id="agilecrm_form_field_' . $fieldKey . '" name="agilecrm_cf7_form_map[' . $fieldKey . ']"' . $required . ' /></td></tr>';
+                $mapFieldsMarkup .= '<td>' . $fieldKey . '</td></tr>';
             }
 
             $agilecrm_cf7_form_map = get_option('agilecrm_cf7_form_map');
@@ -409,13 +469,6 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
                 'selectedFields' => ($agilecrm_cf7_form_map && isset($agilecrm_cf7_form_map['form_' . $formId])) ? $agilecrm_cf7_form_map['form_' . $formId] : array()
             );
 
-            $responseJson['markup'] .= '<h3 class="title">Map Gravity form fields to Agile CRM contact properties</h3>';
-
-            $responseJson['markup'] .= '<table class="form-table" style="width:33%"><tbody>';
-            $responseJson['markup'] .= '<tr valign="top"><th scope="row">Agile property</th><td><strong>Form field</strong></td></tr>';
-            $responseJson['markup'] .= $mapFieldsMarkup;
-            $responseJson['markup'] .= '</tbody></table>';
-
             $responseJson['markup'] .= '<h3>Add a tag to all contacts created from this form</h3>';
             $responseJson['markup'] .= '<table class="form-table"><tbody><tr valign="top">'
                 . '<th scope="row" style="width: 136px;">Tag</th>'
@@ -423,8 +476,13 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
                 . '<small>Tag name should start with an alphabet and can not contain special characters other than space and underscore.</small></td>'
                 . '</tr></tbody></table>';
 
-            echo json_encode($responseJson);
-            die();
+            $responseJson['markup'] .= '<h3 class="title">Available Agile CRM contact properties</h3>';
+            $responseJson['markup'] .= '<table class="form-table" style="width:33%"><tbody>';
+            $responseJson['markup'] .= '<tr valign="top"><th scope="row">Agile property</th><td><strong>Form field</strong></td></tr>';
+            $responseJson['markup'] .= $mapFieldsMarkup;
+            $responseJson['markup'] .= '</tbody></table>';
+
+            echo $responseJson['markup'];
         }
 
         /**
@@ -436,7 +494,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
             $agilecrm_cf7_form_map = get_option('agilecrm_cf7_form_map');
             $agilecrm_form_sync_id = $_POST['agilecrm_cf7_sync_form'];
 
-            //save checked forms ids  
+            //save checked forms ids
             $agilecrm_cf7_mapped_forms = get_option('agilecrm_cf7_mapped_forms');
             if (isset($_POST['agilecrm_cf7_mapped_forms'])) {
                 $syncedForms = $_POST['agilecrm_cf7_mapped_forms'];
@@ -475,133 +533,145 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
         /**
          * Syncs form entries to Agile CRM whenever a mapped form is submited.
          */
-        public function sync_entries_to_agile($entry, $form)
+        public function sync_entries_to_agile($form)
         {
-            $agilecrm_cf7_form_map = get_option('agilecrm_cf7_form_map');
-            $agilecrm_cf7_mapped_forms = get_option('agilecrm_cf7_mapped_forms');
+            $properties = $contact_form->get_properties();
+            if (empty($properties['agilecrm']['enable'])) {
+              return;
+            }
 
-            $formId = $entry['form_id'];
-            if ($formId) {
-                if ($agilecrm_cf7_mapped_forms && in_array($formId, $agilecrm_cf7_mapped_forms)) {
-                    if ($agilecrm_cf7_form_map && isset($agilecrm_cf7_form_map['form_' . $formId])) {
+            $submission = WPCF7_Submission::get_instance();
+            $submittedData = $submission->get_posted_data();
+            $data = array();
+            foreach($submittedData as $key => $val) {
+              if (is_array($val)) {
+                $val = implode(", ", $val);
+              }
+              $data[$key] = $val;
+            }
 
-                        $agileFields = get_option('agilecrm_cf7_contact_fields');
-                        $mappedFields = $agilecrm_cf7_form_map['form_' . $formId];
-                        $contactProperties = array();
-                        $addressProp = array();
+            $parameters = explode("&", $properties['agilecrm']['parameters']);
+            foreach($parameters as $param) {
+              list($key, $val) = explode("=", $param);
+              if (!empty($key)) {
+                $data[$key] = $val;
+              }
+            }
 
-                        foreach ($agileFields as $fieldKey => $fieldVal) {
-                            if ($mappedFields[$fieldKey] != '') {
+            $agileFields = get_option('agilecrm_cf7_contact_fields');
+            $mappedFields = $agilecrm_cf7_form_map['form_' . $formId];
+            $contactProperties = array();
+            $addressProp = array();
 
-                                $fieldTypeArray = explode(",", $fieldVal['type']);
-                                if (in_array('CUSTOM', $fieldTypeArray)) {
-                                    $valueEntered = trim($entry[$mappedFields[$fieldKey]]);
-                                    if (isset($fieldTypeArray[1]) && $fieldTypeArray[1] == "DATE") {
-                                        /*
-                                          These formats are supported m/d/y, d-m-y, d.m.y, y/m/d, y-m-d
-                                         */
-                                        if ($valueEntered != "") {
-                                            $valueEntered = strtotime($valueEntered . " 12:00:00");
-                                        }
-                                    }
-                                    if($valueEntered != "") {
-                                        $contactProperties[] = array(
-                                            "name" => $fieldVal['name'],
-                                            "value" => $valueEntered,
-                                            "type" => $fieldTypeArray[0]
-                                        );   
-                                    }
-                                } elseif (in_array('SYSTEM', $fieldTypeArray)) {
-                                    if ($fieldVal['is_address']) {
-                                        $addressField = explode("_", $fieldKey);
-                                        $addressProp[$addressField[1]] = $entry[$mappedFields[$fieldKey]];
-                                    } else {
-                                        if ($fieldKey != 'tags' && $fieldKey != 'notes') {
-                                            if($entry[$mappedFields[$fieldKey]] != "") {
-                                                $contactProperties[] = array(
-                                                    "name" => $fieldKey,
-                                                    "value" => $entry[$mappedFields[$fieldKey]],
-                                                    "type" => $fieldTypeArray[0]
-                                                );   
-                                            }
-                                        }
-                                    }
-                                }
+            foreach ($agileFields as $fieldKey => $fieldVal) {
+                if (data[$fieldKey] != '') {
+
+                    $fieldTypeArray = explode(",", $fieldVal['type']);
+                    if (in_array('CUSTOM', $fieldTypeArray)) {
+                        $valueEntered = trim($entry[$data[$fieldKey]]);
+                        if (isset($fieldTypeArray[1]) && $fieldTypeArray[1] == "DATE") {
+                            /*
+                              These formats are supported m/d/y, d-m-y, d.m.y, y/m/d, y-m-d
+                             */
+                            if ($valueEntered != "") {
+                                $valueEntered = strtotime($valueEntered . " 12:00:00");
                             }
                         }
-
-                        if ($addressProp) {
+                        if($valueEntered != "") {
                             $contactProperties[] = array(
-                                "name" => "address",
-                                "value" => json_encode($addressProp),
-                                "type" => "SYSTEM"
+                                "name" => $fieldVal['name'],
+                                "value" => $valueEntered,
+                                "type" => $fieldTypeArray[0]
                             );
                         }
-
-                        $finalData = array("properties" => $contactProperties);
-                        
-                        //tags
-                        $finalData['tags'] = array();
-
-                        if ($mappedFields["tags"] != '') {
-                            if (AgileCF7Addon::startsWithNumber($mappedFields["tags"])) {
-                                $entry[$mappedFields['tags']] = preg_replace('/[0-9]+/', '', mb_ereg_replace('[^ \w]+', '', $entry[$mappedFields['tags']]));
-                            }
-                            $finalData['tags'][] = preg_replace('!\s+!', ' ', mb_ereg_replace('[^ \w]+', '', trim($entry[$mappedFields['tags']])));
-                        }
-                        if ($mappedFields["hard_tag"] != '') {
-                            $hardTags = explode(",", trim($mappedFields['hard_tag']));
-                            foreach ($hardTags as $hTag) {
-                                if (AgileCF7Addon::startsWithNumber($hTag)) {
-                                    $finalData['tags'][] = preg_replace('/[0-9]+/', '', mb_ereg_replace('[^ \w]+', '', trim($hTag)));
-                                } else {
-                                    $finalData['tags'][] = preg_replace('!\s+!', ' ', mb_ereg_replace('[^ \w]+', '', trim($hTag)));
+                    } elseif (in_array('SYSTEM', $fieldTypeArray)) {
+                        if ($fieldVal['is_address']) {
+                            $addressField = explode("_", $fieldKey);
+                            $addressProp[$addressField[1]] = $entry[$data[$fieldKey]];
+                        } else {
+                            if ($fieldKey != 'tags' && $fieldKey != 'notes') {
+                                if($entry[$data[$fieldKey]] != "") {
+                                    $contactProperties[] = array(
+                                        "name" => $fieldKey,
+                                        "value" => $entry[$data[$fieldKey]],
+                                        "type" => $fieldTypeArray[0]
+                                    );
                                 }
                             }
                         }
-                        $finalData['tags'] = array_filter($finalData['tags']);
+                    }
+                }
+            }
 
-                        if (isset($entry[$mappedFields['email']]) && $entry[$mappedFields['email']] != '') {
-                            $resultedContact = array();
-                            $isExistsResult = $this->agile_http("contacts/search/email/" . $entry[$mappedFields['email']], null, "GET");
-                            if ($isExistsResult && $isExistsResult != '') {
-                                //replaces long to string, then decode
-                                $resultedContact = json_decode(preg_replace('/("\w+"):(\d+(\.\d+)?)/', '\\1:"\\2"', $isExistsResult), true);
-                                if (isset($resultedContact['id'])) {
-                                    
-                                    $this->agile_http("contacts/edit/tags", json_encode(array(
-                                        "id" => sprintf('%.0f', $resultedContact['id']),
-                                        "tags" => $finalData['tags']
-                                    )), "PUT");
+            if ($addressProp) {
+                $contactProperties[] = array(
+                    "name" => "address",
+                    "value" => json_encode($addressProp),
+                    "type" => "SYSTEM"
+                );
+            }
 
-                                    $finalData['id'] = sprintf('%.0f', $resultedContact['id']);
-                                    $this->agile_http("contacts/edit-properties", json_encode($finalData), "PUT");
-                                }
-                            } else {
-                                $createdResult = $this->agile_http("contacts", json_encode($finalData), "POST");
-                                if ($createdResult) {
-                                    $resultedContact = json_decode($createdResult, true);
-                                    if (isset($resultedContact['id'])) {
-                                        $finalData['id'] = sprintf('%.0f', $resultedContact['id']);
-                                    }
-                                }
-                            }
-                            //for web tracking
-                            $_SESSION['agileCRMTrackEmail'] = $entry[$mappedFields['email']];
+            $finalData = array("properties" => $contactProperties);
 
+            //tags
+            $finalData['tags'] = array();
 
-                            if (isset($finalData['id'])) {
-                                //creating notes if it is mapped
-                                if ($mappedFields["notes"] != '' && $entry[$mappedFields['notes']] != '') {
-                                    $noteJson = json_encode(array(
-                                        "subject" => "Note from Gravity forms",
-                                        "description" => $entry[$mappedFields['notes']],
-                                        "contact_ids" => array($finalData['id'])
-                                    ));
-                                    $this->agile_http("notes", $noteJson, "POST");
-                                }
-                            }
+            if ($data["tags"] != '') {
+                if (AgileCF7Addon::startsWithNumber($data["tags"])) {
+                    $entry[$data['tags']] = preg_replace('/[0-9]+/', '', mb_ereg_replace('[^ \w]+', '', $entry[$data['tags']]));
+                }
+                $finalData['tags'][] = preg_replace('!\s+!', ' ', mb_ereg_replace('[^ \w]+', '', trim($entry[$data['tags']])));
+            }
+            if ($data["hard_tag"] != '') {
+                $hardTags = explode(",", trim($data['hard_tag']));
+                foreach ($hardTags as $hTag) {
+                    if (AgileCF7Addon::startsWithNumber($hTag)) {
+                        $finalData['tags'][] = preg_replace('/[0-9]+/', '', mb_ereg_replace('[^ \w]+', '', trim($hTag)));
+                    } else {
+                        $finalData['tags'][] = preg_replace('!\s+!', ' ', mb_ereg_replace('[^ \w]+', '', trim($hTag)));
+                    }
+                }
+            }
+            $finalData['tags'] = array_filter($finalData['tags']);
+
+            if (isset($entry[$data['email']]) && $entry[$data['email']] != '') {
+                $resultedContact = array();
+                $isExistsResult = $this->agile_http("contacts/search/email/" . $entry[$data['email']], null, "GET");
+                if ($isExistsResult && $isExistsResult != '') {
+                    //replaces long to string, then decode
+                    $resultedContact = json_decode(preg_replace('/("\w+"):(\d+(\.\d+)?)/', '\\1:"\\2"', $isExistsResult), true);
+                    if (isset($resultedContact['id'])) {
+
+                        $this->agile_http("contacts/edit/tags", json_encode(array(
+                            "id" => sprintf('%.0f', $resultedContact['id']),
+                            "tags" => $finalData['tags']
+                        )), "PUT");
+
+                        $finalData['id'] = sprintf('%.0f', $resultedContact['id']);
+                        $this->agile_http("contacts/edit-properties", json_encode($finalData), "PUT");
+                    }
+                } else {
+                    $createdResult = $this->agile_http("contacts", json_encode($finalData), "POST");
+                    if ($createdResult) {
+                        $resultedContact = json_decode($createdResult, true);
+                        if (isset($resultedContact['id'])) {
+                            $finalData['id'] = sprintf('%.0f', $resultedContact['id']);
                         }
+                    }
+                }
+                //for web tracking
+                $_SESSION['agileCRMTrackEmail'] = $entry[$data['email']];
+
+
+                if (isset($finalData['id'])) {
+                    //creating notes if it is mapped
+                    if ($data["notes"] != '' && $entry[$data['notes']] != '') {
+                        $noteJson = json_encode(array(
+                            "subject" => "Note from Contact Form 7 form",
+                            "description" => $entry[$data['notes']],
+                            "contact_ids" => array($finalData['id'])
+                        ));
+                        $this->agile_http("notes", $noteJson, "POST");
                     }
                 }
             }
@@ -694,7 +764,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
 
         /**
          * Checks whether a string starts with a number or not
-         * 
+         *
          * @param string
          * @return boolean TRUE if string starts with a number, FALSE otherwise.
          */
