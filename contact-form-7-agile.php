@@ -97,9 +97,6 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
             add_action('init', array(&$this, 'start_session'));
             add_action('wp_footer', array(&$this, 'set_email'), 98765);
 
-            add_action('admin_init', array(&$this, 'admin_init'));
-            add_action('admin_menu', array(&$this, 'add_menu'));
-
             add_action('wpcf7_init', array(&$this, 'wpcf7_agilecrm_register_service'));
             add_action('wpcf7_before_send_mail', array(&$this, 'sync_entries_to_agile'));
             add_action('wpcf7_save_contact_form', array(&$this, 'save_contact_form'));
@@ -359,78 +356,13 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
             }
         }
 
-        /**
-         * hook into WP's admin_init action hook.
-         */
-        public function admin_init()
-        {
-            // Set up the settings for this plugin
-            $this->init_settings();
-            $this->plugin_settings_tabs[$this->account_settings_tab] = 'Account Details';
-            $this->plugin_settings_tabs[$this->form_settings_tab] = 'Form Settings';
-        }
-
-        /**
-         * Initialize some custom settings.
-         */
-        public function init_settings()
-        {
-            // register the settings for this plugin
-            register_setting($this->tag.'-settings-group', 'agilecrm_cf7_domain');
-            register_setting($this->tag.'-settings-group', 'agilecrm_cf7_admin_email');
-            register_setting($this->tag.'-settings-group', 'agilecrm_cf7_api_key');
-
-            register_setting($this->tag.'-settings-group1', 'agilecrm_cf7_form_map');
-            register_setting($this->tag.'-settings-group2', 'agilecrm_cf7_contact_fields');
-            register_setting($this->tag.'-settings-group3', 'agilecrm_cf7_mapped_forms');
-
-            add_settings_section($this->tag.'-section-one', '', '', $this->tag);
-        }
-
-        /**
-         * add a menu.
-         */
-        public function add_menu()
-        {
-            add_options_page('Settings-'.$this->name, 'Agile Contact Form 7', 'manage_options', $this->tag, array(&$this, 'plugin_settings_page'));
-        }
-
-        /**
-         * Generate plugin setting tabs.
-         */
-        public function plugin_settings_tabs()
-        {
-            $current_tab = (isset($_GET['tab']) && isset($this->plugin_settings_tabs[$_GET['tab']])) ? $_GET['tab'] : $this->account_settings_tab;
-
-            echo '<h2 class="nav-tab-wrapper">';
-            foreach ($this->plugin_settings_tabs as $tab_key => $tab_caption) {
-                $active = $current_tab == $tab_key ? 'nav-tab-active' : '';
-                echo '<a class="nav-tab '.$active.'" href="?page='.$this->tag.'&tab='.$tab_key.'">'.$tab_caption.'</a>';
-            }
-            echo '</h2>';
-        }
-
-        /**
-         * Menu Callback.
-         */
-        public function plugin_settings_page()
-        {
-            if (!current_user_can('manage_options')) {
-                wp_die(__('You do not have sufficient permissions to access this page.'));
-            }
-
-            // Render the settings template based on the tab selected
-            $current_tab = (isset($_GET['tab']) && isset($this->plugin_settings_tabs[$_GET['tab']])) ? $_GET['tab'] : $this->account_settings_tab;
-            include sprintf('%s/templates/'.$current_tab.'-tab.php', dirname(__FILE__));
-        }
-
         public function contact_form_properties($properties)
         {
             if (!isset($properties['agilecrm'])) {
                 $properties['agilecrm'] = array(
-              'enable' => false,
-              'parameters' => 'source=CF7',
-            );
+                    'enable' => false,
+                    'parameters' => 'subject=Submitted via Contact Form 7'
+                );
             }
 
             return $properties;
@@ -452,7 +384,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
         }
 
         /**
-         * Load form fields related to form id through Ajax.
+         * Load Agile CRM contact properties.
          */
         public function load_form_fields()
         {
@@ -664,7 +596,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
                     //creating notes if it is mapped
                     if ($data['notes'] != '') {
                         $noteJson = json_encode(array(
-                            'subject' => 'Submitted via Contact Form 7',
+                            'subject' => ($data['subject'] != '') ? $data['subject'] : 'Submitted via Contact Form 7',
                             'description' => $data['notes'],
                             'contact_ids' => array($finalData['id']),
                         ));
@@ -672,7 +604,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
                     }
                 }
 
-                $wpcf7->skip_mail = true;
+                //$wpcf7->skip_mail = true;
             }
         }
 
