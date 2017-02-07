@@ -494,7 +494,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
             $addressProp = array();
 
             foreach ($agileFields as $fieldKey => $fieldVal) {
-                if (data[$fieldKey] != '') {
+                if ($data[$fieldKey] != '') {
                     $fieldTypeArray = explode(',', $fieldVal['type']);
                     if (in_array('CUSTOM', $fieldTypeArray)) {
                         $valueEntered = trim($data[$fieldKey]);
