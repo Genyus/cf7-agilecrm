@@ -26,7 +26,7 @@
     </tr>
     </tbody>
   </table>
-  <?php AgileCF7Addon::get_instance()->load_form_fields(); ?>
+  <?php AgileCF7Addon::get_instance()->load_form_fields($agilecrm); ?>
 </fieldset>
 
 </div>

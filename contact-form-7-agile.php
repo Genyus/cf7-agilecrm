@@ -379,6 +379,10 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
                 $agilecrm['parameters'] = trim($_POST['agilecrm-parameters']);
             }
 
+            if (isset($_POST['agilecrm_cf7_form_map_hard_tag'])) {
+                $agilecrm['hard_tag'] = trim($_POST['agilecrm_cf7_form_map_hard_tag']);
+            }
+
             $properties['agilecrm'] = $agilecrm;
             $contact_form->set_properties($properties);
         }
@@ -386,7 +390,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
         /**
          * Load Agile CRM contact properties.
          */
-        public function load_form_fields()
+        public function load_form_fields($agilecrm = null)
         {
             global $wpdb;
 
@@ -445,7 +449,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
             $responseJson['markup'] .= '<h3>Add a tag to all contacts created from this form</h3>';
             $responseJson['markup'] .= '<table class="form-table"><tbody><tr valign="top">'
                 .'<th scope="row" style="width: 136px;">Tag</th>'
-                .'<td><input type="text" name="agilecrm_cf7_form_map[hard_tag]" id="agilecrm_form_field_hard_tag"><br>'
+                .'<td><input type="text" name="agilecrm_cf7_form_map_hard_tag" id="agilecrm_form_field_hard_tag" value="' . esc_attr($agilecrm['hard_tag']) . '"><br>'
                 .'<small>Tag name should start with an alphabet and can not contain special characters other than space and underscore.</small></td>'
                 .'</tr></tbody></table>';
 
@@ -494,7 +498,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
             $addressProp = array();
 
             foreach ($agileFields as $fieldKey => $fieldVal) {
-                if (data[$fieldKey] != '') {
+                if (isset($data[$fieldKey]) && !empty($data[$fieldKey])) {
                     $fieldTypeArray = explode(',', $fieldVal['type']);
                     if (in_array('CUSTOM', $fieldTypeArray)) {
                         $valueEntered = trim($data[$fieldKey]);
@@ -545,13 +549,17 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
             //tags
             $finalData['tags'] = array();
 
-            if ($data['tags'] != '') {
-                if (self::startsWithNumber($data['tags'])) {
-                    $data['tags'] = preg_replace('/[0-9]+/', '', mb_ereg_replace('[^ \w]+', '', $data['tags']));
+            if (isset($data['tags']) && !empty($data['tags'])) {
+                $tags = explode(',', trim($data['tags']));
+
+                foreach ($tags as $tag) {
+                    if (self::startsWithNumber($tag)) {
+                        $tag = preg_replace('/[0-9]+/', '', mb_ereg_replace('[^ \w]+', '', $tag));
+                    }
+                    $finalData['tags'][] = preg_replace('!\s+!', ' ', mb_ereg_replace('[^ \w]+', '', trim($tag)));
                 }
-                $finalData['tags'][] = preg_replace('!\s+!', ' ', mb_ereg_replace('[^ \w]+', '', trim($data['tags'])));
             }
-            if ($data['hard_tag'] != '') {
+            if (isset($data['hard_tag']) && !empty($data['hard_tag'])) {
                 $hardTags = explode(',', trim($data['hard_tag']));
                 foreach ($hardTags as $hTag) {
                     if (self::startsWithNumber($hTag)) {
