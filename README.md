@@ -1,6 +1,5 @@
 === Plugin Name ===
-Contributors: jaapjansma
-Donate link: https://civicoop.org/
+Contributors: Genyus
 Tags: contact form 7, cf7, Agile CRM
 Requires at least: 4.3
 Tested up to: 4.6.1

@@ -13,6 +13,8 @@ Author: Gary McPherson
 Author URI: https://ingenyus.com
 License: AGPLv3
 Text Domain: ccontact-form-7-agilecrm-integration
+GitHub Plugin URI: Genyus/cf7-agilecrm
+GitHub Branch: master
 */
 define('CF7_AGILE__PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CF7_AGILE__PLUGIN_DIR', plugin_dir_path(__FILE__));
