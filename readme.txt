@@ -1,12 +1,11 @@
 === Plugin Name ===
-Contributors: jaapjansma
-Donate link: https://civicoop.org/
+Contributors: Genyus
 Tags: contact form 7, cf7, Agile CRM
 Requires at least: 4.3
-Tested up to: 4.6.1
+Tested up to: 4.8
 Stable tag: 1.0
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: Apache 2.0
+License URI: http://www.apache.org/licenses/LICENSE-2.0
 
 Contact form 7 Agile CRM integration.
 
@@ -30,6 +29,9 @@ Per contact form you could enable Agile CRM integration. The submission of the c
 2. This screenshot shows the screen for enabling and setting up Agile CRM integration at a contact form.
 
 == Changelog ==
+
+= 1.0.1 =
+* fix: Applies hard-coded tag correctly
 
 = 1.0 =
 * Initial commit

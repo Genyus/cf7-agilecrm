@@ -2,16 +2,16 @@
 Contributors: Genyus
 Tags: contact form 7, cf7, Agile CRM
 Requires at least: 4.3
-Tested up to: 4.6.1
+Tested up to: 4.8
 Stable tag: 1.0
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: Apache 2.0
+License URI: http://www.apache.org/licenses/LICENSE-2.0
 
 Contact form 7 Agile CRM integration.
 
 == Description ==
 
-This plugin adds integration for Agile CRM to contact form 7. With this plugin it is possible to submit a contact for to an external Agile CRM.
+This plugin adds integration for Agile CRM to contact form 7. With this plugin it is possible to submit a contact to an external Agile CRM.
 
 Per contact form you could enable Agile CRM integration. The submission of the contact form is then submitted to the Agile CRM REST api. That is why you should also enter an Agile CRM entity and an Agile CRM action. The data in the form should then match the data for the API. E.g. if you push a first_name to the api your field should be called first_name.
 
@@ -30,7 +30,8 @@ Per contact form you could enable Agile CRM integration. The submission of the c
 
 == Changelog ==
 
+= 1.0.1 =
+* fix: Applies hard-coded tag correctly
+
 = 1.0 =
 * Initial commit
-
-
