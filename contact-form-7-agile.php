@@ -8,7 +8,7 @@
 Plugin Name: Contact Form 7 Agile CRM integration
 Plugin URI: https://ingenyus.com
 Description: Agile CRM integration plugin for Contact Form 7. Sync form entries to Agile easily.
-Version: 1.0.0
+Version: 1.0.1
 Author: Gary McPherson
 Author URI: https://ingenyus.com
 License: AGPLv3
@@ -561,8 +561,8 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
                     $finalData['tags'][] = preg_replace('!\s+!', ' ', mb_ereg_replace('[^ \w]+', '', trim($tag)));
                 }
             }
-            if (isset($data['hard_tag']) && !empty($data['hard_tag'])) {
-                $hardTags = explode(',', trim($data['hard_tag']));
+            if (isset($properties['agilecrm']['hard_tag']) && !empty($properties['agilecrm']['hard_tag'])) {
+                $hardTags = explode(',', trim($properties['agilecrm']['hard_tag']));
                 foreach ($hardTags as $hTag) {
                     if (self::startsWithNumber($hTag)) {
                         $finalData['tags'][] = preg_replace('/[0-9]+/', '', mb_ereg_replace('[^ \w]+', '', trim($hTag)));
