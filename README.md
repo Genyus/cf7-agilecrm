@@ -1,11 +1,11 @@
 === Plugin Name ===
-Contributors: Genyus
-Tags: contact form 7, cf7, Agile CRM
-Requires at least: 4.3
-Tested up to: 4.9.1
-Stable tag: 1.1
-License: Apache 2.0
-License URI: http://www.apache.org/licenses/LICENSE-2.0
+* Contributors: Genyus
+* Tags: contact form 7, cf7, Agile CRM
+* Requires at least: 4.3
+* Tested up to: 4.9.1
+* Stable tag: 1.1
+* License: Apache 2.0
+* License URI: http://www.apache.org/licenses/LICENSE-2.0
 
 Contact form 7 Agile CRM integration.
 
