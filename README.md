@@ -30,6 +30,9 @@ Per contact form you could enable Agile CRM integration. The submission of the c
 
 == Changelog ==
 
+= 1.1 =
+* chore: Integrates WPS_Extend_Plugin. Replaces AGPL license with Apache.
+
 = 1.0.1 =
 * fix: Applies hard-coded tag correctly
 
