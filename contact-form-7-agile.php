@@ -1,18 +1,18 @@
 <?php
 /**
  * @author Gary McPherson (genyus) <gary@ingenyus.com>
- * @license http://www.gnu.org/licenses/agpl-3.0.html
+ * @license http://www.apache.org/licenses/LICENSE-2.0
  */
 
 /*
 Plugin Name: Contact Form 7 Agile CRM integration
 Plugin URI: https://ingenyus.com
 Description: Agile CRM integration plugin for Contact Form 7. Sync form entries to Agile easily.
-Version: 1.0.1
+Version: 1.1
 Author: Gary McPherson
 Author URI: https://ingenyus.com
-License: AGPLv3
-Text Domain: ccontact-form-7-agilecrm-integration
+License: Apache 2.0
+Text Domain: contact-form-7-agilecrm-integration
 GitHub Plugin URI: Genyus/cf7-agilecrm
 GitHub Branch: master
 */
@@ -20,12 +20,16 @@ define('CF7_AGILE__PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CF7_AGILE__PLUGIN_DIR', plugin_dir_path(__FILE__));
 defined('ABSPATH') or die('Plugin file cannot be accessed directly.');
 include_once ABSPATH.'wp-admin/includes/plugin.php';
+require_once( 'classes/WPS_Extend_Plugin.php' );
+
+new WPS_Extend_Plugin( 'contact-form-7/wp-contact-form-7.php', __FILE__, '4.7', 'contact-form-7-agilecrm-integration' );
+
 //get the base class
 if (!class_exists('WPCF7_Service')) {
     require_once plugin_dir_path(__FILE__).'/../contact-form-7/includes/integration.php';
 }
 
-if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('AgileCF7Addon')) {
+if (!class_exists('AgileCF7Addon')) {
     class AgileCF7Addon extends WPCF7_Service
     {
         protected $tag = 'agile-cf7-addon';
@@ -33,7 +37,7 @@ if (is_plugin_active('contact-form-7/wp-contact-form-7.php') && !class_exists('A
         private $form_settings_tab = 'form';
         private $plugin_settings_tabs = array();
         protected $name = 'Contact Form 7 Agile CRM Add-On';
-        protected $version = '1.0';
+        protected $version = '1.1';
 
         private static $instance;
         private $settings;

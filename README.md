@@ -2,8 +2,8 @@
 Contributors: Genyus
 Tags: contact form 7, cf7, Agile CRM
 Requires at least: 4.3
-Tested up to: 4.8
-Stable tag: 1.0
+Tested up to: 4.9.1
+Stable tag: 1.1
 License: Apache 2.0
 License URI: http://www.apache.org/licenses/LICENSE-2.0
 
@@ -19,7 +19,7 @@ Per contact form you could enable Agile CRM integration. The submission of the c
 
 1. Upload the plugin files to the `/wp-content/plugins/plugin-name` directory, or install the plugin through the WordPress plugins screen directly.
 1. Activate the plugin through the 'Plugins' screen in WordPress
-1. Use the Settings->Agile CRM screen to configure the plugin
+1. Use the Contact->Integration screen to configure the plugin
 1. Enable Agile CRM on per form basis.
 
 
